@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendify — HR Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+
+    :root{
+      --bg:#F8FAFC;--surface:rgba(255,255,255,0.97);--surface2:rgba(255,255,255,0.75);
+      --border:rgba(203,213,225,0.5);--border2:#E2E8F0;
+      --text-primary:#0F172A;--text-secondary:#64748B;--text-muted:#94A3B8;
+      --nav-bg:rgba(255,255,255,0.93);--sidebar-bg:rgba(255,255,255,0.75);
+      --card-hover:0 20px 36px -12px rgba(0,0,0,0.10);
+      --input-bg:#F8FAFC;--note-item-bg:#F1F5F9;--scrolltrack:#E2E8F0;
+      --cal-locked-bg:#F1F5F9;--cal-locked-text:#CBD5E1;
+      --cal-full-bg:#EFF6FF;--cal-full-border:#BFDBFE;
+      --cal-absent-bg:#FEF2F2;--cal-absent-border:#FECACA;
+      --cal-mixed-bg:#FFFBEB;--cal-mixed-border:#FDE68A;
+      --badge-present-bg:#DCFCE7;--badge-absent-bg:#FEE2E2;--badge-late-bg:#FEF3C7;
+      --modal-bg:rgba(255,255,255,1);
+    }
+    body.dark-mode{
+      --bg:#0D1117;--surface:rgba(22,30,46,0.98);--surface2:rgba(22,30,46,0.85);
+      --border:rgba(51,65,85,0.7);--border2:#1E2D45;
+      --text-primary:#E2E8F0;--text-secondary:#94A3B8;--text-muted:#475569;
+      --nav-bg:rgba(10,15,28,0.97);--sidebar-bg:rgba(10,15,28,0.95);
+      --card-hover:0 20px 40px -12px rgba(0,0,0,0.55);
+      --input-bg:#131C2E;--note-item-bg:#131C2E;--scrolltrack:#131C2E;
+      --cal-locked-bg:#131C2E;--cal-locked-text:#334155;
+      --cal-full-bg:#1e3a5f;--cal-full-border:#1d4ed8;
+      --cal-absent-bg:#3b0f0f;--cal-absent-border:#991b1b;
+      --cal-mixed-bg:#3b2900;--cal-mixed-border:#b45309;
+      --badge-present-bg:#14532D;--badge-absent-bg:#7F1D1D;--badge-late-bg:#78350F;
+      --modal-bg:#131C2E;
+    }
+    body{
+      background:var(--bg);
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      color:var(--text-primary);overflow-x:hidden;transition:background .35s,color .35s;
+    }
+
+    /* ── Glass Card ── */
+    .glass-card{
+      background:var(--surface);backdrop-filter:blur(14px);
+      border:1px solid var(--border);border-radius:28px;
+      box-shadow:0 4px 20px -4px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.03);
+      transition:all .25s ease;
+    }
+    .glass-card:hover{box-shadow:var(--card-hover);border-color:rgba(59,130,246,.22);transform:translateY(-2px);}
+    .stat-card{transition:all .2s cubic-bezier(.2,.9,.4,1.1);}
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar{width:6px;height:6px;}
+    ::-webkit-scrollbar-track{background:var(--scrolltrack);border-radius:10px;}
+    ::-webkit-scrollbar-thumb{background:#3B82F6;border-radius:10px;}
+
+    /* ── Animations ── */
+    @keyframes slideIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+    .slide-panel{animation:slideIn .25s ease-out;}
+    .fade-up{animation:fadeUp .3s ease-out both;}
+
+    /* ── Dark Toggle ── */
+    .dark-toggle{
+      width:44px;height:24px;border-radius:12px;
+      background:#CBD5E1;position:relative;cursor:pointer;
+      border:none;transition:background .3s;outline:none;
+    }
+    .dark-toggle.on{background:#3B82F6;}
+    .dark-toggle::after{
+      content:'';position:absolute;left:3px;top:3px;
+      width:18px;height:18px;border-radius:50%;
+      background:white;transition:left .3s;
+    }
+    .dark-toggle.on::after{left:23px;}
+
+    /* ── Notes Panel ── */
+    .notes-panel{
+      position:fixed;top:70px;right:0;width:340px;height:calc(100vh - 70px);
+      background:var(--sidebar-bg);backdrop-filter:blur(22px);
+      border-left:1px solid var(--border2);z-index:95;
+      transform:translateX(100%);transition:transform .3s ease;
+      padding:24px 20px;overflow-y:auto;
+    }
+    .notes-panel.open{transform:translateX(0);}
+    .note-input{
+      width:100%;border-radius:16px;border:1.5px solid var(--border2);
+      background:var(--input-bg);color:var(--text-primary);
+      font-family:inherit;font-size:13px;padding:12px 14px;
+      resize:none;outline:none;transition:border-color .2s;
+    }
+    .note-input:focus{border-color:#3B82F6;}
+    .note-item{
+      background:var(--note-item-bg);border-radius:14px;
+      padding:12px 14px;margin-bottom:10px;
+      border:1px solid var(--border2);position:relative;
+      transition:opacity .2s,transform .2s;
+    }
+    .note-item p{font-size:13px;color:var(--text-primary);line-height:1.5;}
+    .note-item small{font-size:10px;color:var(--text-muted);margin-top:6px;display:block;}
+    .note-del-btn{
+      position:absolute;top:8px;right:10px;
+      background:none;border:none;color:var(--text-muted);
+      cursor:pointer;font-size:12px;transition:color .2s;
+    }
+    .note-del-btn:hover{color:#EF4444;}
+    .add-note-btn{
+      width:100%;padding:10px;border-radius:14px;
+      background:linear-gradient(135deg,#3B82F6,#06B6D4);
+      border:none;color:white;font-weight:600;font-size:13px;
+      cursor:pointer;margin-top:10px;transition:opacity .2s;
+    }
+    .add-note-btn:hover{opacity:.88;}
+
+    /* ── Brand icon ── */
+    .brand-icon{
+      width:38px;height:38px;border-radius:12px;
+      background:linear-gradient(135deg,#3B82F6,#06B6D4);
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;flex-shrink:0;
+      box-shadow:0 4px 12px rgba(59,130,246,.35);transition:box-shadow .2s;
+    }
+    .brand-icon:hover{box-shadow:0 6px 18px rgba(59,130,246,.5);}
+    .brand-icon span{font-size:13px;font-weight:800;color:white;letter-spacing:-.5px;}
+
+    /* ── Nav icon button ── */
+    .nav-icon-btn{
+      width:42px;height:42px;border-radius:40px;
+      background:var(--note-item-bg);border:1px solid var(--border2);
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:background .2s;position:relative;
+    }
+    .nav-icon-btn:hover{background:#EFF6FF;}
+
+    /* ── Modal ── */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);
+      z-index:3000;display:flex;align-items:center;justify-content:center;
+      animation:fadeUp .2s ease-out;
+    }
+    .modal-box{
+      background:var(--modal-bg);border-radius:28px;padding:36px 32px;
+      width:100%;max-width:460px;box-shadow:0 24px 60px rgba(0,0,0,.25);
+      border:1px solid var(--border2);position:relative;
+    }
+    .modal-input{
+      width:100%;border-radius:14px;border:1.5px solid var(--border2);
+      background:var(--input-bg);color:var(--text-primary);
+      font-family:inherit;font-size:14px;padding:12px 16px;
+      outline:none;transition:border-color .2s;margin-bottom:14px;
+    }
+    .modal-input:focus{border-color:#3B82F6;}
+    .modal-input::placeholder{color:var(--text-muted);}
+    .modal-label{
+      font-size:12px;font-weight:600;color:var(--text-secondary);
+      text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block;
+    }
+    .save-btn{
+      width:100%;padding:14px;border-radius:40px;
+      background:linear-gradient(135deg,#3B82F6,#06B6D4);
+      border:none;color:white;font-weight:700;font-size:15px;
+      cursor:pointer;margin-top:4px;transition:opacity .2s,transform .15s;
+    }
+    .save-btn:hover{opacity:.9;transform:scale(1.01);}
+    .cancel-btn{
+      width:100%;padding:12px;border-radius:40px;
+      background:transparent;border:1.5px solid var(--border2);
+      color:var(--text-secondary);font-weight:600;font-size:14px;
+      cursor:pointer;margin-top:10px;transition:background .2s;
+    }
+    .cancel-btn:hover{background:var(--note-item-bg);}
+
+    /* ── Employee Cards ── */
+    .emp-card{
+      background:var(--surface);border-radius:24px;
+      border:1px solid var(--border);
+      box-shadow:0 2px 14px rgba(0,0,0,.05);
+      padding:24px 20px;display:flex;flex-direction:column;
+      align-items:center;text-align:center;gap:10px;
+      transition:all .25s ease;cursor:default;
+    }
+    .emp-card:hover{box-shadow:var(--card-hover);border-color:rgba(59,130,246,.3);transform:translateY(-3px);}
+    .emp-card-add{
+      background:var(--surface);border-radius:24px;
+      border:2px dashed var(--border2);
+      padding:32px 20px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:10px;
+      cursor:pointer;transition:all .25s ease;
+      color:var(--text-muted);
+    }
+    .emp-card-add:hover{border-color:#3B82F6;color:#3B82F6;background:#EFF6FF22;transform:translateY(-2px);}
+    .emp-add-icon{
+      width:52px;height:52px;border-radius:50%;
+      background:linear-gradient(135deg,#3B82F6,#06B6D4);
+      display:flex;align-items:center;justify-content:center;
+      font-size:24px;color:white;
+      box-shadow:0 4px 14px rgba(59,130,246,.4);
+      transition:transform .2s;
+    }
+    .emp-card-add:hover .emp-add-icon{transform:scale(1.1) rotate(90deg);}
+
+    /* ── 3D Chart container ── */
+    #chart3d-canvas{display:block;border-radius:18px;}
+
+    /* ── Calendar cell ── */
+    .cal-cell{
+      aspect-ratio:1;border-radius:14px;display:flex;align-items:center;
+      justify-content:center;font-weight:500;font-size:14px;
+      border-width:1.5px;border-style:solid;
+      position:relative;transition:all .2s;
+    }
+    .cal-cell.clickable{cursor:pointer;}
+    .cal-cell.clickable:hover{transform:scale(1.08);z-index:2;}
+    .cal-cell.locked{cursor:default;opacity:.7;}
+    .cal-cell.today-cell{border-width:2px !important;box-shadow:0 0 0 3px rgba(59,130,246,.22);}
+
+    /* ── Responsive Styling ── */
+    @media (max-width: 1024px) {
+      /* On tablets and smaller, sidebar and notes panel are overlays */
+      main {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 24px 20px !important;
+      }
+      #sidebar {
+        width: 256px !important;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease !important;
+        box-shadow: none;
+      }
+      #sidebar.open-mobile {
+        transform: translateX(0) !important;
+        width: 256px !important;
+        box-shadow: 8px 0 24px rgba(0,0,0,0.15);
+      }
+      /* Hide sidebar by default on page transition */
+      #sidebar:not(.open-mobile) {
+        width: 0 !important;
+        transform: translateX(-100%) !important;
+      }
+      .notes-panel {
+        width: 300px !important;
+        max-width: 100% !important;
+        box-shadow: -8px 0 24px rgba(0,0,0,0.15);
+      }
+    }
+
+    @media (max-width: 768px) {
+      /* Mobile grids adjust to single column */
+      .stat-card-container {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      .split-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+      }
+      .modal-box {
+        padding: 24px 20px !important;
+        border-radius: 20px !important;
+        max-width: 92% !important;
+        margin: 10px !important;
+      }
+      .modal-input {
+        padding: 10px 12px !important;
+        font-size: 13px !important;
+      }
+      /* Adjust calendar cells for better fit */
+      .cal-cell {
+        font-size: 12px !important;
+        border-radius: 8px !important;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .chart-summary-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+    }
+  </style>
+</head>
+<body id="body-root">
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<script>
+/* ══════════════════════════════════════
+   STATE & SYSTEM DATE CONFIGURATIONS
+   ══════════════════════════════════════ */
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = today.getMonth(); // 0-indexed (e.g. 4 for May)
+const TODAY_DAY = today.getDate();
+
+const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+const currentMonthLabel = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+let darkMode   = false;
+let notesOpen  = false;
+let activePage = 'dashboard';
+let sidebarOpen= true;
+let noteCounter= 3;
+let selectedAttendanceDate = `${currentMonthPrefix}-${String(TODAY_DAY).padStart(2, '0')}`;
+
+let notes = [
+  {id:1,text:"Follow up with Engineering team about late arrivals.",ts:`${today.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}, 09:10`},
+  {id:2,text:"Review Priya's leave request – Design sprint deadline conflicts.",ts:`${today.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}, 09:45`}
+];
+
+// Status color mapping (customizable at runtime)
+let statusColors = {
+  present: "#10b981", // green
+  half: "#F59E0B",   // yellow
+  leave: "#EF4444"   // red
+};
+
+/* ── Employee store (editable) ── */
+let EMPLOYEE_STORE = [
+  {id:"e1",name:"Karen Kumar",  age:22,phone:"9876543210",doj:"2022-03-15",salary:500,dept:"Engineering",email:"arjun@attendify.io"},
+  {id:"e2",name:"Favin Raj",    age:22,phone:"9123456780",doj:"2021-07-01",salary:2800,dept:"Design",      email:"priya@attendify.io"},
+ /*  {id:"e3",name:"Rahul Mehta",   age:31,phone:"9345678901",doj:"2020-11-20",salary:2700,dept:"Welder",      email:"rahul@attendify.io"},
+  {id:"e4",name:"Sneha Patel",   age:27,phone:"9234567890",doj:"2023-01-10",salary:3200,dept:"Engineering", email:"sneha@attendify.io"},
+  {id:"e5",name:"Vikram Das",    age:34,phone:"9456789012",doj:"2019-06-05",salary:2600,dept:"Employee",    email:"vikram@attendify.io"},
+  {id:"e6",name:"Ananya Roy",    age:28,phone:"9567890123",doj:"2022-09-14",salary:2900,dept:"Senior Employee", email:"ananya@attendify.io"},
+  {id:"e7",name:"Kiran Rao",     age:25,phone:"9678901234",doj:"2023-04-22",salary:3200,dept:"Engineering", email:"kiran@attendify.io"},
+  {id:"e8",name:"Divya Krishnan",age:30,phone:"9789012345",doj:"2021-02-17",salary:2700,dept:"Welder",      email:"divya@attendify.io"} */
+];
+let empIdCounter = 9;
+
+/* ══════════════════════════════════════
+   ATTENDANCE DATA
+   ══════════════════════════════════════ */
+const genAttendance = () => {
+  const records=[];
+  for(let day=1;day<=daysInMonth;day++){
+    if (day > TODAY_DAY) continue;
+    const date=`${currentMonthPrefix}-${String(day).padStart(2,'0')}`;
+    EMPLOYEE_STORE.forEach(emp=>{
+      let status="present";
+      if((emp.id==="e4"&&day===5)||(emp.id==="e3"&&day===8)||(emp.id==="e2"&&day===20)) status="absent";
+      else if((emp.id==="e3"&&day===3)||(emp.id==="e7"&&day===7)||(emp.id==="e1"&&day===15)) status="late";
+      const dow=new Date(currentYear,currentMonth,day).getDay();
+      if(dow===0||dow===6) status=Math.random()>.7?"present":"absent";
+      records.push({id:`${emp.id}-${date}`,employeeId:emp.id,date,status,
+        clockIn:status!=="absent"?(status==="late"?"10:15":"09:15"):null,
+        clockOut:status!=="absent"?"18:00":null});
+    });
+  }
+  return records;
+};
+let ATTENDANCE=genAttendance();
+
+const addEmployeeAttendance = (empId) => {
+  // No pre-filled attendance for new employee; records are created via UI interaction.
+};
+
+const getByDate=(date)=>{
+  const recs=ATTENDANCE.filter(a=>a.date===date);
+  const present=recs.filter(r=>r.status==="present"||r.status==="late").map(r=>EMPLOYEE_STORE.find(e=>e.id===r.employeeId)).filter(Boolean);
+  const absent=EMPLOYEE_STORE.filter(emp=>!recs.find(r=>r.employeeId===emp.id)||recs.find(r=>r.employeeId===emp.id&&r.status==="absent"));
+  return{present,absent};
+};
+const getDailySalary=(date)=>{
+  const recs=ATTENDANCE.filter(a=>a.date===date&&(a.status==="present"||a.status==="late"));
+  return recs.reduce((s,r)=>{const e=EMPLOYEE_STORE.find(x=>x.id===r.employeeId);return s+(e?e.salary:0);},0);
+};
+const getTodayStats=()=>{
+  const todayStr = `${currentMonthPrefix}-${String(TODAY_DAY).padStart(2, '0')}`;
+  const recs=ATTENDANCE.filter(a=>a.date===todayStr);
+  return{present:recs.filter(r=>r.status==="present"||r.status==="late").length,absent:EMPLOYEE_STORE.length-recs.filter(r=>r.status==="present"||r.status==="late").length};
+};
+const getMonthlyRate=()=>{
+  const p=ATTENDANCE.filter(a=>a.date.startsWith(currentMonthPrefix)&&(a.status==="present"||a.status==="late")).length;
+  const t=EMPLOYEE_STORE.length*TODAY_DAY;
+  return t>0?Math.round((p/t)*100):86;
+};
+
+/* ══════════════════════════════════════
+   HELPERS / COMPONENTS
+══════════════════════════════════════ */
+const DEPT_COLORS={Engineering:"#3B82F6",Design:"#06B6D4",Welder:"#f59e0b",Employee:"#10b981","Senior Employee":"#f43f5e"};
+function deptColor(dept){return DEPT_COLORS[dept]||"#3B82F6";}
+
+/* ── Hex → rgba helper ── */
+function hexToRgba(hex, alpha){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ── Update status colors & re-render attendance ── */
+window.updateStatusColors=function(key, val){
+  statusColors[key]=val;
+  setActivePage('attendance');
+};
+
+
+function Avatar({name,dept,size=36}){
+  const c=deptColor(dept);
+  const init=name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
+  return`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${c}22;border:1.5px solid ${c}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${size*.38}px;color:${c};flex-shrink:0;">${init}</div>`;
+}
+
+function StatCard({label,value,sub,accent,icon}){
+  return`<div class="glass-card stat-card" style="padding:24px 20px;cursor:default;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px;">${label}</div>
+        <div style="font-size:42px;font-weight:800;color:${accent};line-height:1.1;">${value}</div>
+        ${sub?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">${sub}</div>`:''}
+      </div>
+      <div style="width:48px;height:48px;border-radius:24px;background:${accent}1a;display:flex;align-items:center;justify-content:center;font-size:24px;color:${accent};">
+        <i class="fas ${icon}"></i>
+      </div>
+    </div>
+    <div style="margin-top:18px;height:3px;background:linear-gradient(90deg,${accent}90,transparent);border-radius:2px;"></div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════
+   THREE.JS ORB
+══════════════════════════════════════ */
+function drawFallbackOrb(container) {
+  container.innerHTML='';
+  const canvas = document.createElement('canvas');
+  const DPR = window.devicePixelRatio || 1;
+  const W = container.clientWidth || 280;
+  const H = 260;
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  container.appendChild(canvas);
+  
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  let t = 0;
+  let animId;
+  
+  function draw() {
+    if (!document.getElementById('orb-container')) {
+      cancelAnimationFrame(animId);
+      return;
+    }
+    animId = requestAnimationFrame(draw);
+    t += 0.02;
+    ctx.clearRect(0, 0, W, H);
+    
+    const cx = W / 2;
+    const cy = H / 2;
+    const baseR = 52 + Math.sin(t * 1.5) * 3.5;
+    
+    // Glow background
+    const radG = ctx.createRadialGradient(cx, cy, 5, cx, cy, baseR * 1.8);
+    radG.addColorStop(0, darkMode ? 'rgba(6, 182, 212, 0.45)' : 'rgba(59, 130, 246, 0.28)');
+    radG.addColorStop(0.5, darkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(6, 182, 212, 0.08)');
+    radG.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = radG;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR * 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Outer rotating dashed rings with shadows
+    ctx.save();
+    ctx.strokeStyle = '#3B82F6';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = '#3B82F6';
+    ctx.shadowBlur = 8;
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 0.4);
+    ctx.setLineDash([8, 12]);
+    ctx.beginPath();
+    ctx.arc(0, 0, baseR + 24, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = '#06B6D4';
+    ctx.lineWidth = 1.2;
+    ctx.translate(cx, cy);
+    ctx.rotate(-t * 0.6);
+    ctx.setLineDash([4, 8]);
+    ctx.beginPath();
+    ctx.arc(0, 0, baseR + 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Core sphere gradient
+    const coreG = ctx.createRadialGradient(cx - 12, cy - 12, 2, cx, cy, baseR);
+    coreG.addColorStop(0, '#FFFFFF');
+    coreG.addColorStop(0.2, '#06B6D4');
+    coreG.addColorStop(0.7, '#3B82F6');
+    coreG.addColorStop(1, '#1D4ED8');
+    
+    ctx.save();
+    ctx.shadowColor = '#3B82F6';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = coreG;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Orbiting particles
+    for (let i = 0; i < 12; i++) {
+      const angle = t * 0.8 + i * (Math.PI / 6);
+      const dist = baseR + 32 + Math.cos(t + i) * 6;
+      const px = cx + Math.cos(angle) * dist;
+      const py = cy + Math.sin(angle) * dist;
+      const size = 2 + Math.sin(t * 2 + i) * 1;
+      
+      ctx.fillStyle = i % 2 === 0 ? '#FFFFFF' : '#06B6D4';
+      ctx.beginPath();
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  draw();
+}
+
+function initOrb(){
+  const container=document.getElementById('orb-container');
+  if(!container) return;
+  
+  // Wait if the browser layout engine has not computed the width yet
+  if(container.clientWidth === 0){
+    setTimeout(initOrb, 50);
+    return;
+  }
+  
+  if(typeof THREE==='undefined'){
+    drawFallbackOrb(container);
+    return;
+  }
+  
+  // Clean up any existing rendering loops and contexts to prevent leaks
+  if(window._orbAnimId){
+    cancelAnimationFrame(window._orbAnimId);
+    window._orbAnimId = null;
+  }
+  if(window._orbRenderer){
+    try {
+      window._orbRenderer.dispose();
+    } catch(e){}
+    window._orbRenderer = null;
+  }
+  
+  try {
+    container.innerHTML='';
+    const W=container.clientWidth, H=260;
+    const scene=new THREE.Scene();
+    window._orbScene=scene;
+    scene.background=new THREE.Color(darkMode?0x0D1117:0xF8FAFC);
+    
+    const camera=new THREE.PerspectiveCamera(45,W/H,.1,1000);
+    camera.position.set(0,1,5);camera.lookAt(0,0,0);
+    
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setSize(W,H);renderer.setPixelRatio(window.devicePixelRatio);
+    window._orbRenderer = renderer;
+    container.appendChild(renderer.domElement);
+    
+    scene.add(new THREE.AmbientLight(0xffffff,.65));
+    const mL=new THREE.PointLight(0x3B82F6,1.2);mL.position.set(3,4,3);scene.add(mL);
+    const fL=new THREE.PointLight(0x06B6D4,.7);fL.position.set(-2,1,4);scene.add(fL);
+    
+    const sphere=new THREE.Mesh(
+      new THREE.SphereGeometry(1.3,96,96),
+      new THREE.MeshStandardMaterial({color:0xffffff,metalness:.88,roughness:.18,emissive:0x3B82F6,emissiveIntensity:.14})
+    );scene.add(sphere);
+    
+    const wf=new THREE.Mesh(
+      new THREE.SphereGeometry(1.38,32,32),
+      new THREE.MeshBasicMaterial({color:0x3B82F6,wireframe:true,transparent:true,opacity:.12})
+    );scene.add(wf);
+    
+    const pGeo=new THREE.BufferGeometry();
+    const pos=new Float32Array(600*3);
+    for(let i=0;i<600;i++){pos[i*3]=(Math.random()-.5)*9;pos[i*3+1]=(Math.random()-.5)*7;pos[i*3+2]=(Math.random()-.5)*6-2;}
+    pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const pts=new THREE.Points(pGeo,new THREE.PointsMaterial({color:0x3B82F6,size:.05,transparent:true,opacity:.4}));
+    scene.add(pts);
+    
+    const ring=new THREE.Mesh(
+      new THREE.TorusGeometry(1.68,.022,64,300),
+      new THREE.MeshStandardMaterial({color:0x3B82F6,emissive:0x3B82F6,emissiveIntensity:.18})
+    );ring.rotation.x=Math.PI/2;scene.add(ring);
+    
+    let t=0;
+    function anim(){
+      if(!document.getElementById('orb-container')) {
+        return; // Stop animation loop when container is no longer in DOM
+      }
+      window._orbAnimId=requestAnimationFrame(anim);
+      t+=.012;
+      sphere.rotation.y=t*.3;sphere.rotation.x=Math.sin(t*.2)*.1;
+      wf.rotation.y=t*.2;pts.rotation.y=t*.04;pts.rotation.x=t*.02;ring.rotation.z+=.005;
+      renderer.render(scene,camera);
+    }
+    anim();
+    
+    window.addEventListener('resize',()=>{
+      const nW=container.clientWidth;
+      if(nW > 0){
+        renderer.setSize(nW,H);camera.aspect=nW/H;camera.updateProjectionMatrix();
+      }
+    });
+  } catch (err) {
+    console.warn("Three.js WebGL renderer failed. Using 2D Canvas fallback.", err);
+    drawFallbackOrb(container);
+  }
+}
+
+/* ══════════════════════════════════════
+   3-D ATTENDANCE CHART (Canvas pseudo-3D)
+   ══════════════════════════════════════ */
+function renderAttendanceChart(){
+  return`
+  <div class="glass-card fade-up" style="padding:28px;margin-top:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:var(--text-secondary);text-transform:uppercase;">Attendance Overview</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-top:4px;">Daily Attendance · ${currentMonthLabel}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">Showing ${today.toLocaleDateString('en-US', {month: 'long'})} 1 – ${TODAY_DAY} (past days only)</div>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);">
+          <span style="width:14px;height:14px;border-radius:4px;background:#10b981;display:inline-block;box-shadow:0 2px 6px #10b98166;"></span>Present
+        </span>
+        <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);">
+          <span style="width:14px;height:14px;border-radius:4px;background:#F59E0B;display:inline-block;box-shadow:0 2px 6px #F59E0B66;"></span>Late
+        </span>
+        <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);">
+          <span style="width:14px;height:14px;border-radius:4px;background:#EF4444;display:inline-block;box-shadow:0 2px 6px #EF444466;"></span>Absent
+        </span>
+      </div>
+    </div>
+    <div style="position:relative;">
+      <canvas id="chart3d-canvas" style="width:100%;border-radius:18px;"></canvas>
+    </div>
+    <!-- Mini summary strip -->
+    <div class="chart-summary-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px;">
+      <div style="background:var(--note-item-bg);border-radius:16px;padding:14px 16px;border:1px solid var(--border2);">
+        <div style="font-size:11px;font-weight:600;color:#10b981;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Avg Present</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text-primary);" id="chart-avg-present">—</div>
+        <div style="font-size:11px;color:var(--text-muted);">per day</div>
+      </div>
+      <div style="background:var(--note-item-bg);border-radius:16px;padding:14px 16px;border:1px solid var(--border2);">
+        <div style="font-size:11px;font-weight:600;color:#F59E0B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Total Late</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text-primary);" id="chart-total-late">—</div>
+        <div style="font-size:11px;color:var(--text-muted);">this month</div>
+      </div>
+      <div style="background:var(--note-item-bg);border-radius:16px;padding:14px 16px;border:1px solid var(--border2);">
+        <div style="font-size:11px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Total Absent</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text-primary);" id="chart-total-absent">—</div>
+        <div style="font-size:11px;color:var(--text-muted);">this month</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function draw3DChart(){
+  const canvas=document.getElementById('chart3d-canvas');
+  if(!canvas) return;
+  const parent=canvas.parentElement;
+  const DPR=window.devicePixelRatio||1;
+  const CW=parent.clientWidth;
+  const CH=280;
+  canvas.width=CW*DPR; canvas.height=CH*DPR;
+  canvas.style.width=CW+'px'; canvas.style.height=CH+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+
+  const W=CW,H=CH;
+  const PAD={top:30,right:20,bottom:48,left:42};
+  const chartW=W-PAD.left-PAD.right;
+  const chartH=H-PAD.top-PAD.bottom;
+
+  /* build data */
+  const labels=[], pData=[], lData=[], aData=[];
+  let sumP=0,sumL=0,sumA=0;
+  for(let d=1;d<=TODAY_DAY;d++){
+    const ds=`${currentMonthPrefix}-${String(d).padStart(2,'0')}`;
+    const recs=ATTENDANCE.filter(a=>a.date===ds);
+    const p=recs.filter(r=>r.status==="present").length;
+    const l=recs.filter(r=>r.status==="late").length;
+    const ab=recs.filter(r=>r.status==="absent").length;
+    labels.push(d);pData.push(p);lData.push(l);aData.push(ab);
+    sumP+=p;sumL+=l;sumA+=ab;
+  }
+  /* update summary */
+  const ap=document.getElementById('chart-avg-present');
+  const tl=document.getElementById('chart-total-late');
+  const ta=document.getElementById('chart-total-absent');
+  if(ap) ap.textContent=(sumP/TODAY_DAY).toFixed(1);
+  if(tl) tl.textContent=sumL;
+  if(ta) ta.textContent=sumA;
+
+  const maxVal=EMPLOYEE_STORE.length+1;
+  const isDark=darkMode;
+  const gridC=isDark?'rgba(148,163,184,.1)':'rgba(100,116,139,.08)';
+  const txtC=isDark?'#94A3B8':'#64748B';
+
+  /* background gradient */
+  const bgG=ctx.createLinearGradient(0,0,0,H);
+  bgG.addColorStop(0,isDark?'rgba(30,42,60,.0)':'rgba(248,250,252,.0)');
+  bgG.addColorStop(1,isDark?'rgba(30,42,60,.0)':'rgba(248,250,252,.0)');
+  ctx.fillStyle=bgG;ctx.fillRect(0,0,W,H);
+
+  /* ── Grid lines ── */
+  ctx.lineWidth=1;
+  for(let v=0;v<=maxVal;v+=2){
+    const y=PAD.top+chartH-(v/maxVal)*chartH;
+    ctx.strokeStyle=gridC;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(PAD.left,y);ctx.lineTo(PAD.left+chartW,y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=txtC;ctx.font=`bold 9px Inter,sans-serif`;ctx.textAlign='right';
+    ctx.fillText(v,PAD.left-7,y+3.5);
+  }
+
+  /* ── 3-D bars ── */
+  const N=labels.length;
+  const groupW=chartW/N;
+  const bPad=groupW*.10;
+  const bW=(groupW-bPad*2)/3;
+  const depth=bW*.55; /* 3D depth */
+  const shiftX=depth*.6;
+  const shiftY=depth*.35;
+
+  const datasets=[
+    {data:pData,top:'#10b981',side:'#059669',face:'#d1fae5',glow:'rgba(16,185,129,.45)'},
+    {data:lData,top:'#F59E0B',side:'#d97706',face:'#fef3c7',glow:'rgba(245,158,11,.45)'},
+    {data:aData,top:'#EF4444',side:'#dc2626',face:'#fee2e2',glow:'rgba(239,68,68,.45)'}
+  ];
+
+  datasets.forEach((ds,di)=>{
+    ds.data.forEach((val,i)=>{
+      if(val===0) return;
+      const x0=PAD.left+i*groupW+bPad+di*bW;
+      const barH=(val/maxVal)*chartH;
+      const y0=PAD.top+chartH-barH;
+      const bH=barH;
+
+      /* glow shadow */
+      ctx.save();
+      ctx.shadowColor=ds.glow;
+      ctx.shadowBlur=14;
+
+      /* FRONT face */
+      const grad=ctx.createLinearGradient(x0,y0,x0,y0+bH);
+      grad.addColorStop(0,ds.top);
+      grad.addColorStop(1,ds.side);
+      ctx.fillStyle=grad;
+      const r=Math.min(5,bH/2);
+      ctx.beginPath();
+      ctx.moveTo(x0+r,y0);
+      ctx.lineTo(x0+bW-r,y0);ctx.quadraticCurveTo(x0+bW,y0,x0+bW,y0+r);
+      ctx.lineTo(x0+bW,y0+bH);ctx.lineTo(x0,y0+bH);
+      ctx.lineTo(x0,y0+r);ctx.quadraticCurveTo(x0,y0,x0+r,y0);
+      ctx.closePath();ctx.fill();
+
+      /* TOP face (3D illusion) */
+      ctx.shadowBlur=0;
+      const topCol=isDark?lighten(ds.top,20):lighten(ds.top,30);
+      ctx.fillStyle=topCol;
+      ctx.beginPath();
+      ctx.moveTo(x0,y0);
+      ctx.lineTo(x0+shiftX,y0-shiftY);
+      ctx.lineTo(x0+bW+shiftX,y0-shiftY);
+      ctx.lineTo(x0+bW,y0);
+      ctx.closePath();ctx.fill();
+
+      /* RIGHT side face */
+      const sideG=ctx.createLinearGradient(x0+bW,y0,x0+bW+shiftX,y0+bH-shiftY);
+      sideG.addColorStop(0,ds.side);
+      sideG.addColorStop(1,darken(ds.side,25));
+      ctx.fillStyle=sideG;
+      ctx.beginPath();
+      ctx.moveTo(x0+bW,y0);
+      ctx.lineTo(x0+bW+shiftX,y0-shiftY);
+      ctx.lineTo(x0+bW+shiftX,y0+bH-shiftY);
+      ctx.lineTo(x0+bW,y0+bH);
+      ctx.closePath();ctx.fill();
+
+      ctx.restore();
+
+      /* value label on top */
+      if(val>0){
+        ctx.fillStyle=isDark?'#E2E8F0':'#1E293B';
+        ctx.font=`bold 9px Inter,sans-serif`;
+        ctx.textAlign='center';
+        ctx.fillText(val,x0+bW/2,y0-shiftY-3);
+      }
+    });
+  });
+
+  /* ── X axis labels ── */
+  ctx.fillStyle=txtC;ctx.font=`600 10px Inter,sans-serif`;ctx.textAlign='center';
+  labels.forEach((l,i)=>{
+    const x=PAD.left+i*groupW+groupW/2;
+    ctx.fillText(`${l}`,x,H-PAD.bottom+16);
+  });
+
+  /* ── Axis line ── */
+  ctx.strokeStyle=isDark?'#334155':'#CBD5E1';ctx.lineWidth=1.5;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(PAD.left,PAD.top+chartH);ctx.lineTo(PAD.left+chartW,PAD.top+chartH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(PAD.left,PAD.top);ctx.lineTo(PAD.left,PAD.top+chartH);ctx.stroke();
+}
+
+function lighten(hex,amt){
+  let n=parseInt(hex.slice(1),16);
+  let r=Math.max(0,Math.min(255,((n>>16)&0xff)+amt));
+  let g=Math.max(0,Math.min(255,((n>>8)&0xff)+amt));
+  let b=Math.max(0,Math.min(255,(n&0xff)+amt));
+  return`#${((r<<16)|(g<<8)|b).toString(16).padStart(6,'0')}`;
+}
+function darken(hex,amt){return lighten(hex,-amt);}
+
+/* ══════════════════════════════════════
+   CALENDAR
+══════════════════════════════════════ */
+function renderCalendar(){
+  const firstDayOffset=new Date(currentYear,currentMonth,1).getDay();
+  const weekdays=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+  const getDayStatus=(day)=>{
+    const ds=`${currentMonthPrefix}-${String(day).padStart(2,'0')}`;
+    const recs=ATTENDANCE.filter(a=>a.date===ds);
+    if(recs.length===0) return "unmarked";
+    const p=recs.filter(r=>r.status==="present"||r.status==="late").length;
+    if(p===EMPLOYEE_STORE.length) return"full";
+    if(p===0) return"absent-all";
+    return"mixed";
+  };
+
+  let html=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
+    <div>
+      <h3 style="font-size:17px;font-weight:700;color:var(--text-primary);">📅 ${currentMonthLabel}</h3>
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:3px;">Click any date to view breakdown</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-secondary);">
+        <span style="width:9px;height:9px;background:var(--cal-full-bg);border:1px solid var(--cal-full-border);border-radius:2px;display:inline-block;"></span>All Present
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-secondary);">
+        <span style="width:9px;height:9px;background:var(--cal-absent-bg);border:1px solid var(--cal-absent-border);border-radius:2px;display:inline-block;"></span>Absent
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-secondary);">
+        <span style="width:9px;height:9px;background:var(--cal-mixed-bg);border:1px solid var(--cal-mixed-border);border-radius:2px;display:inline-block;"></span>Mixed
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-secondary);">
+        <span style="width:9px;height:9px;background:transparent;border:1.5px dashed var(--border2);border-radius:2px;display:inline-block;"></span>Unmarked
+      </span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;">
+    ${weekdays.map(d=>`<div style="text-align:center;font-weight:700;font-size:10px;color:var(--text-muted);padding-bottom:2px;">${d}</div>`).join('')}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">`;
+
+  for(let i=0;i<firstDayOffset;i++) html+=`<div></div>`;
+
+  for(let day=1;day<=daysInMonth;day++){
+    const isToday=day===TODAY_DAY;
+    let bg,border,color;
+    const st=getDayStatus(day);
+    if(st==='unmarked'){
+      bg='transparent';border='var(--border2)';color='var(--text-secondary)';
+    } else if(st==='full'){bg='var(--cal-full-bg)';border='var(--cal-full-border)';color='var(--text-primary)';}
+    else if(st==='absent-all'){bg='var(--cal-absent-bg)';border='var(--cal-absent-border)';color='var(--text-primary)';}
+    else{bg='var(--cal-mixed-bg)';border='var(--cal-mixed-border)';color='var(--text-primary)';}
+
+    const borderStyle=isToday?`2px solid #3B82F6`:(st==='unmarked'?`1.5px dashed ${border}`:`1.5px solid ${border}`);
+    const shadow=isToday?'box-shadow:0 0 0 3px rgba(59,130,246,.2);':'';
+    const clickable=`class="cal-cell clickable" onclick="showDayDetails(${day})"`;
+    const todayCls=isToday?'today-cell':'';
+    const todayDot=isToday?`<span style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#3B82F6;border-radius:50%;"></span>`:'';
+
+    html+=`<div ${clickable} style="aspect-ratio:1;background:${bg};border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:${isToday?700:500};font-size:13px;color:${color};border:${borderStyle};${shadow}position:relative;" ${todayCls?`data-today="1"`:''}>
+      ${day}${todayDot}
+    </div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+function showDayDetails(day){
+  const dateStr=`${currentMonthPrefix}-${String(day).padStart(2,'0')}`;
+  const{present,absent}=getByDate(dateStr);
+  const totalSalary=getDailySalary(dateStr);
+  const panel=document.getElementById('side-panel');
+  if(!panel) return;
+  const fd=new Date(currentYear,currentMonth,day).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const isDark=darkMode;
+  const pBg=isDark?'#161E2E':'white';
+  const pTxt=isDark?'#E2E8F0':'#0F172A';
+  const sBg=isDark?'#0D1117':'#F8FAFC';
+  const bBg=isDark?'#334155':'#F1F5F9';
+  const rBg=isDark?'#0D1117':'#F8FAFC';
+
+  // Check if attendance is unmarked for this day
+  const isUnmarked = ATTENDANCE.filter(a=>a.date===dateStr).length === 0;
+
+  let detailHtml = '';
+  if (isUnmarked) {
+    detailHtml = `
+    <div style="background:${pBg};width:380px;height:100%;border-radius:28px 0 0 28px;box-shadow:-8px 0 40px rgba(0,0,0,.15);padding:28px;overflow-y:auto;border-left:1px solid var(--border2);" class="slide-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <h3 style="font-size:18px;font-weight:700;color:${pTxt};">${fd}</h3>
+        <button onclick="closeSidePanel()" style="background:${bBg};border:none;border-radius:40px;width:32px;height:32px;cursor:pointer;font-size:14px;color:${pTxt};">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:${bBg};display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text-muted);">
+          <i class="fas fa-calendar-times"></i>
+        </div>
+        <div>
+          <h4 style="font-size:15px;font-weight:700;color:var(--text-primary);">Roster Not Marked</h4>
+          <p style="font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.5;">No attendance entries have been recorded for this date yet.</p>
+        </div>
+      </div>
+      <button onclick="closeSidePanel(); changeAttendanceDate('${dateStr}')" style="margin-top:24px;width:100%;background:linear-gradient(135deg,#3B82F6,#06B6D4);border:none;border-radius:40px;padding:14px;font-weight:600;color:white;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.25);">
+        📝 Mark Attendance Now
+      </button>
+    </div>`;
+  } else {
+    detailHtml = `
+    <div style="background:${pBg};width:380px;height:100%;border-radius:28px 0 0 28px;box-shadow:-8px 0 40px rgba(0,0,0,.15);padding:28px;overflow-y:auto;border-left:1px solid var(--border2);" class="slide-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <h3 style="font-size:18px;font-weight:700;color:${pTxt};">${fd}</h3>
+        <button onclick="closeSidePanel()" style="background:${bBg};border:none;border-radius:40px;width:32px;height:32px;cursor:pointer;font-size:14px;color:${pTxt};">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div style="background:linear-gradient(135deg,#3B82F615,#06B6D415);border-radius:20px;padding:16px 18px;margin-bottom:22px;border:1px solid #3B82F630;">
+        <div style="font-size:12px;font-weight:600;color:#3B82F6;letter-spacing:.8px;">💵 DAY SALARY DISBURSED</div>
+        <div style="font-size:32px;font-weight:800;color:${pTxt};margin-top:6px;">₹${totalSalary.toLocaleString()}</div>
+        <div style="font-size:11px;color:#64748B;margin-top:2px;">Based on ${present.length} present employees</div>
+      </div>
+      <div style="margin-bottom:22px;">
+        <div style="font-weight:700;margin-bottom:12px;font-size:15px;color:#10b981;">✅ Present · ${present.length}</div>
+        <div style="display:flex;flex-direction:column;gap:10px;max-height:180px;overflow-y:auto;">
+          ${present.map(emp=>`<div style="display:flex;align-items:center;gap:12px;background:${rBg};padding:8px 12px;border-radius:16px;">${Avatar({name:emp.name,dept:emp.dept,size:32})}<div><div style="font-weight:600;color:${pTxt};font-size:13px;">${emp.name}</div><div style="font-size:11px;color:#64748B;">${emp.dept}</div></div></div>`).join('')}
+          ${present.length===0?`<div style="color:#94A3B8;font-size:13px;">No present employees</div>`:''}
+        </div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:12px;font-size:15px;color:#EF4444;">❌ Absent · ${absent.length}</div>
+        <div style="display:flex;flex-direction:column;gap:10px;max-height:180px;overflow-y:auto;">
+          ${absent.map(emp=>`<div style="display:flex;align-items:center;gap:12px;background:${rBg};padding:8px 12px;border-radius:16px;">${Avatar({name:emp.name,dept:emp.dept,size:32})}<div><div style="font-weight:600;color:${pTxt};font-size:13px;">${emp.name}</div><div style="font-size:11px;color:#64748B;">${emp.dept}</div></div></div>`).join('')}
+        </div>
+      </div>
+      <button onclick="closeSidePanel(); changeAttendanceDate('${dateStr}')" style="margin-top:24px;width:100%;background:linear-gradient(135deg,#3B82F6,#06B6D4);border:none;border-radius:40px;padding:14px;font-weight:600;color:white;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.25);">
+        📝 Update Attendance →
+      </button>
+    </div>`;
+  }
+  panel.innerHTML=detailHtml;
+  panel.style.display='flex';
+}
+function closeSidePanel(){const p=document.getElementById('side-panel');if(p)p.style.display='none';}
+
+/* ══════════════════════════════════════
+   NOTES
+══════════════════════════════════════ */
+function renderNotesPanel(){
+  return`
+  <div id="notes-panel" class="notes-panel${notesOpen?' open':''}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:700;color:var(--text-primary);">📝 Notes</div>
+      <button onclick="toggleNotes()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;"><i class="fas fa-times"></i></button>
+    </div>
+    <textarea id="note-text-input" class="note-input" rows="3" placeholder="Write a quick note…"></textarea>
+    <button class="add-note-btn" onclick="addNote()"><i class="fas fa-plus" style="margin-right:6px;"></i>Add Note</button>
+    <div style="margin-top:18px;" id="notes-list">
+      ${notes.map(n=>`
+      <div class="note-item" id="note-${n.id}">
+        <button class="note-del-btn" onclick="deleteNote(${n.id})"><i class="fas fa-trash-alt"></i></button>
+        <p>${n.text}</p><small>${n.ts}</small>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function toggleNotes(){
+  notesOpen=!notesOpen;
+  const p=document.getElementById('notes-panel');
+  if(p) p.classList.toggle('open',notesOpen);
+  const b=document.getElementById('notes-toggle-btn');
+  if(b){b.style.background=notesOpen?'#EFF6FF':'';b.style.borderColor=notesOpen?'#3B82F6':'';}
+}
+
+window.addNote=function(){
+  const inp=document.getElementById('note-text-input');
+  if(!inp||!inp.value.trim()) return;
+  const now=new Date();
+  const ts=now.toLocaleDateString('en-US',{month:'short',day:'numeric'})+', '+
+            now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+  notes.unshift({id:noteCounter++,text:inp.value.trim(),ts});
+  inp.value='';
+  const list=document.getElementById('notes-list');
+  if(list) list.innerHTML=notes.map(n=>`
+    <div class="note-item" id="note-${n.id}">
+      <button class="note-del-btn" onclick="deleteNote(${n.id})"><i class="fas fa-trash-alt"></i></button>
+      <p>${n.text}</p><small>${n.ts}</small>
+    </div>`).join('');
+};
+
+window.deleteNote=function(id){
+  notes=notes.filter(n=>n.id!==id);
+  const el=document.getElementById(`note-${id}`);
+  if(el){el.style.opacity='0';el.style.transform='scale(.95)';el.style.transition='.2s';setTimeout(()=>el.remove(),200);}
+};
+
+/* ══════════════════════════════════════
+   DARK MODE
+══════════════════════════════════════ */
+function toggleDarkMode(){
+  darkMode=!darkMode;
+  document.body.classList.toggle('dark-mode',darkMode);
+  const t=document.getElementById('dark-toggle-btn');
+  if(t) t.classList.toggle('on',darkMode);
+  if(window._orbScene) window._orbScene.background.set(darkMode?0x0D1117:0xF8FAFC);
+  /* redraw chart with new colors */
+  setTimeout(draw3DChart,50);
+}
+
+/* ══════════════════════════════════════
+   EMPLOYEE MODAL
+══════════════════════════════════════ */
+function openEmployeeModal(empId = null){
+  const isEdit = empId !== null;
+  const emp = isEdit ? EMPLOYEE_STORE.find(e => e.id === empId) : null;
+  const root=document.getElementById('modal-root');
+  root.innerHTML=`
+  <div class="modal-overlay" id="emp-modal" onclick="if(event.target.id==='emp-modal')closeModal()">
+    <div class="modal-box">
+      <button onclick="closeModal()" style="position:absolute;top:18px;right:18px;background:var(--note-item-bg);border:none;border-radius:40px;width:32px;height:32px;cursor:pointer;font-size:14px;color:var(--text-secondary);">
+        <i class="fas fa-times"></i>
+      </button>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;">
+        <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:20px;color:white;box-shadow:0 4px 12px rgba(59,130,246,.35);">
+          <i class="fas ${isEdit ? 'fa-user-edit' : 'fa-user-plus'}"></i>
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--text-primary);">${isEdit ? 'Edit Employee Details' : 'Add New Employee'}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${isEdit ? 'Update employee information' : 'Fill in the details and save'}</div>
+        </div>
+      </div>
+
+      <label class="modal-label">Full Name</label>
+      <input class="modal-input" id="emp-name" type="text" placeholder="e.g. Ravi Kumar" value="${isEdit ? emp.name : ''}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label class="modal-label">Age</label>
+          <input class="modal-input" id="emp-age" type="number" placeholder="e.g. 28" min="18" max="65" value="${isEdit ? emp.age : ''}">
+        </div>
+        <div>
+          <label class="modal-label">Department</label>
+          <select class="modal-input" id="emp-dept" style="cursor:pointer;">
+            <option value="">Select Dept.</option>
+            <option ${isEdit && emp.dept === 'Engineering' ? 'selected' : ''}>Engineering</option>
+            <option ${isEdit && emp.dept === 'Design' ? 'selected' : ''}>Design</option>
+            <option ${isEdit && emp.dept === 'Welder' ? 'selected' : ''}>Welder</option>
+            <option ${isEdit && emp.dept === 'Employee' ? 'selected' : ''}>Employee</option>
+            <option ${isEdit && emp.dept === 'Senior Employee' ? 'selected' : ''}>Senior Employee</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="modal-label">Phone Number</label>
+      <input class="modal-input" id="emp-phone" type="tel" placeholder="e.g. 9876543210" maxlength="10" value="${isEdit ? emp.phone : ''}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label class="modal-label">Date of Joining</label>
+          <input class="modal-input" id="emp-doj" type="date" value="${isEdit ? emp.doj : ''}">
+        </div>
+        <div>
+          <label class="modal-label">Fixed Salary / Day (₹)</label>
+          <input class="modal-input" id="emp-salary" type="number" placeholder="e.g. 3000" min="0" value="${isEdit ? emp.salary : ''}">
+        </div>
+      </div>
+
+      <div id="modal-error" style="font-size:12px;color:#EF4444;margin-bottom:8px;display:none;"></div>
+      <button class="save-btn" onclick="saveEmployee(${isEdit ? `'${empId}'` : 'null'})"><i class="fas fa-save" style="margin-right:8px;"></i>${isEdit ? 'Update Details' : 'Save Employee'}</button>
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>`;
+}
+
+window.closeModal=function(){
+  const r=document.getElementById('modal-root');
+  if(r) r.innerHTML='';
+};
+
+window.saveEmployee=function(empId = null){
+  const name=document.getElementById('emp-name').value.trim();
+  const age=parseInt(document.getElementById('emp-age').value);
+  const dept=document.getElementById('emp-dept').value;
+  const phone=document.getElementById('emp-phone').value.trim();
+  const doj=document.getElementById('emp-doj').value;
+  const salary=parseInt(document.getElementById('emp-salary').value);
+  const errEl=document.getElementById('modal-error');
+
+  if(!name||!dept||!phone||!doj||isNaN(age)||isNaN(salary)){
+    errEl.textContent='⚠ Please fill in all fields correctly.';
+    errEl.style.display='block';return;
+  }
+  if(phone.length<10){errEl.textContent='⚠ Phone number must be 10 digits.';errEl.style.display='block';return;}
+  errEl.style.display='none';
+
+  if(empId){
+    const emp=EMPLOYEE_STORE.find(e=>e.id===empId);
+    if(emp){
+      emp.name=name;
+      emp.age=age;
+      emp.dept=dept;
+      emp.phone=phone;
+      emp.doj=doj;
+      emp.salary=salary;
+      emp.email=`${name.split(' ')[0].toLowerCase()}@attendify.io`;
+    }
+  } else {
+    const id=`e${empIdCounter++}`;
+    const email=`${name.split(' ')[0].toLowerCase()}@attendify.io`;
+    EMPLOYEE_STORE.push({id,name,age,phone,doj,salary,dept,email});
+    addEmployeeAttendance(id);
+  }
+
+  closeModal();
+  setActivePage('employees');
+};
+
+/* ══════════════════════════════════════
+   EMPLOYEES PAGE
+══════════════════════════════════════ */
+function renderEmployees(){
+  return`
+  <div class="fade-up">
+    <!-- Header bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;">Team Directory</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text-primary);margin-top:2px;">${EMPLOYEE_STORE.length} Employees</div>
+      </div>
+      <button onclick="openEmployeeModal()" style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#3B82F6,#06B6D4);border:none;border-radius:14px;padding:11px 20px;color:white;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,.35);transition:opacity .2s;" onmouseenter="this.style.opacity='.88'" onmouseleave="this.style.opacity='1'">
+        <i class="fas fa-plus"></i> Add Employee
+      </button>
+    </div>
+
+    <!-- Employee grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;">
+      <!-- Add card -->
+      <div class="emp-card-add" onclick="openEmployeeModal()">
+        <div class="emp-add-icon"><i class="fas fa-plus"></i></div>
+        <div style="font-weight:700;font-size:15px;">Add Employee</div>
+        <div style="font-size:12px;color:var(--text-muted);text-align:center;max-width:160px;">Click to add a new team member</div>
+      </div>
+
+      ${EMPLOYEE_STORE.map(emp=>{
+        const c=deptColor(emp.dept);
+        const init=emp.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        const dojFmt=emp.doj?new Date(emp.doj).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+        return`
+        <div class="emp-card fade-up">
+          <!-- Avatar -->
+          <div style="width:64px;height:64px;border-radius:50%;background:${c}20;border:2.5px solid ${c}55;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:${c};">
+            ${init}
+          </div>
+          <!-- Name & dept -->
+          <div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary);">${emp.name}</div>
+            <span style="display:inline-block;background:${c}18;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-top:4px;">${emp.dept}</span>
+          </div>
+          <!-- Details table -->
+          <div style="width:100%;background:var(--note-item-bg);border-radius:16px;padding:14px 16px;margin-top:4px;border:1px solid var(--border2);text-align:left;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:12px;">
+              <span style="color:var(--text-muted);"><i class="fas fa-phone" style="width:12px;"></i></span>
+              <span style="color:var(--text-primary);">${emp.phone}</span>
+
+              <span style="color:var(--text-muted);"><i class="fas fa-birthday-cake" style="width:12px;"></i></span>
+              <span style="color:var(--text-primary);">Age ${emp.age}</span>
+
+              <span style="color:var(--text-muted);"><i class="fas fa-calendar-alt" style="width:12px;"></i></span>
+              <span style="color:var(--text-primary);">Joined ${dojFmt}</span>
+
+              <span style="color:var(--text-muted);"><i class="fas fa-rupee-sign" style="width:12px;"></i></span>
+              <span style="color:var(--text-primary);font-weight:700;color:${c};">₹${emp.salary.toLocaleString()}/day</span>
+            </div>
+          </div>
+          <!-- Action buttons -->
+          <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+            <button onclick="openEmployeeModal('${emp.id}')" style="flex:1;padding:8px;border-radius:12px;background:var(--note-item-bg);border:1px solid var(--border2);color:var(--text-secondary);font-weight:600;font-size:12px;cursor:pointer;transition:all .2s;" onmouseenter="this.style.background='#EFF6FF';this.style.color='#3B82F6';this.style.borderColor='rgba(59,130,246,.3)'" onmouseleave="this.style.background='var(--note-item-bg)';this.style.color='var(--text-secondary)';this.style.borderColor='var(--border2)'">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button onclick="deleteEmployee('${emp.id}')" style="flex:1;padding:8px;border-radius:12px;background:var(--badge-absent-bg);border:none;color:#EF4444;font-weight:600;font-size:12px;cursor:pointer;transition:opacity .2s;" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+              <i class="fas fa-trash-alt"></i> Remove
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+window.deleteEmployee=function(id){
+  if(!confirm('Remove this employee from the directory?')) return;
+  EMPLOYEE_STORE=EMPLOYEE_STORE.filter(e=>e.id!==id);
+  /* clean up attendance records for this employee */
+  ATTENDANCE=ATTENDANCE.filter(a=>a.employeeId!==id);
+  setActivePage('employees');
+};
+
+/* ══════════════════════════════════════
+   ATTENDANCE MARKER
+══════════════════════════════════════ */
+function renderAttendancePage(){
+  const dateStr = selectedAttendanceDate;
+  const dayNum = parseInt(dateStr.split('-')[2]);
+  const fd = new Date(currentYear, currentMonth, dayNum).toLocaleDateString('en-US', {
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  return `
+  <div class="fade-up">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:16px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;">Attendance Marker</div>
+          <div style="font-size:22px;font-weight:700;color:var(--text-primary);margin-top:2px;">Daily Roster</div>
+        </div>
+        <div class="glass-card" style="padding:8px 16px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);"><i class="fas fa-palette" style="margin-right:6px;color:#3B82F6;"></i> Customize Colors</span>
+          <label style="font-size:12px;color:var(--text-secondary);margin-right:4px;">Present</label>
+          <input type="color" id="present-color" value="${statusColors.present}" onchange="updateStatusColors('present', this.value)" style="width:32px;height:32px;border:none;cursor:pointer;"/>
+          <label style="font-size:12px;color:var(--text-secondary);margin-left:8px;margin-right:4px;">Half Day</label>
+          <input type="color" id="half-color" value="${statusColors.half}" onchange="updateStatusColors('half', this.value)" style="width:32px;height:32px;border:none;cursor:pointer;"/>
+          <label style="font-size:12px;color:var(--text-secondary);margin-left:8px;margin-right:4px;">Leave</label>
+          <input type="color" id="leave-color" value="${statusColors.leave}" onchange="updateStatusColors('leave', this.value)" style="width:32px;height:32px;border:none;cursor:pointer;"/>
+        </div>
+      </div>
+      
+      <div class="glass-card" style="padding:8px 16px;display:flex;align-items:center;gap:12px;border-radius:16px;box-shadow:none;">
+        <span style="font-size:13px;font-weight:600;color:var(--text-secondary);"><i class="fas fa-calendar-alt" style="margin-right:6px;color:#3B82F6;"></i> Select Date:</span>
+        <input type="date" id="attendance-date-picker" value="${dateStr}" min="${currentMonthPrefix}-01" max="${currentMonthPrefix}-${daysInMonth}" 
+          onchange="changeAttendanceDate(this.value)" 
+          style="background:var(--input-bg);color:var(--text-primary);border:1px solid var(--border2);border-radius:10px;padding:6px 12px;font-family:inherit;font-size:13px;outline:none;cursor:pointer;">
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(6,182,212,0.06));border:1px solid rgba(59,130,246,0.15);border-radius:20px;padding:18px 24px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h4 style="font-size:16px;font-weight:700;color:var(--text-primary);">${fd}</h4>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Mark presence, leave, or half-days. Changes are saved automatically.</p>
+      </div>
+      <div style="display:flex;gap:12px;" id="attendance-summary-badges">
+        ${getAttendanceSummaryBadges(dateStr)}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">
+      ${EMPLOYEE_STORE.map(emp => {
+        const rec = ATTENDANCE.find(a => a.date === dateStr && a.employeeId === emp.id);
+        const status = rec ? rec.status : '';
+        
+        const c = deptColor(emp.dept);
+        const init = emp.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        
+        return `
+        <div class="glass-card" style="padding:22px;display:flex;flex-direction:column;gap:16px;position:relative;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:${c}20;border:2px solid ${c}55;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:${c};flex-shrink:0;">
+              ${init}
+            </div>
+            <div style="overflow:hidden;">
+              <div style="font-size:15px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${emp.name}">${emp.name}</div>
+              <div style="font-size:11px;font-weight:600;color:${c};margin-top:2px;">${emp.dept}</div>
+            </div>
+            <div id="status-saved-${emp.id}" style="margin-left:auto;color:#10b981;font-size:14px;opacity:0;transition:opacity 0.3s;">
+              <i class="fas fa-check-circle"></i>
+            </div>
+          </div>
+
+          <div style="height:1px;background:var(--border);width:100%;"></div>
+
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Select Status</div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--note-item-bg);border:1px solid var(--border2);border-radius:14px;padding:4px;gap:4px;">
+              <button onclick="setEmployeeAttendance('${emp.id}', 'present')" 
+                style="border:none;border-radius:10px;padding:8px 6px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;
+                ${status === 'present' 
+                  ? 'background:' + statusColors.present + ';color:white;box-shadow:0 3px 8px ' + hexToRgba(statusColors.present, 0.35) + ';' 
+                  : 'background:transparent;color:var(--text-secondary);'}"
+                onmouseenter="if('${status}'!=='present')this.style.background='${hexToRgba(statusColors.present, 0.1)}'"
+                onmouseleave="if('${status}'!=='present')this.style.background='transparent'">
+                Present
+              </button>
+              
+              <button onclick="setEmployeeAttendance('${emp.id}', 'late')" 
+                style="border:none;border-radius:10px;padding:8px 6px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;
+                ${status === 'late' 
+                  ? 'background:' + statusColors.half + ';color:white;box-shadow:0 3px 8px ' + hexToRgba(statusColors.half, 0.35) + ';' 
+                  : 'background:transparent;color:var(--text-secondary);'}"
+                onmouseenter="if('${status}'!=='late')this.style.background='${hexToRgba(statusColors.half, 0.1)}'"
+                onmouseleave="if('${status}'!=='late')this.style.background='transparent'">
+                Half Day
+              </button>
+
+              <button onclick="setEmployeeAttendance('${emp.id}', 'absent')" 
+                style="border:none;border-radius:10px;padding:8px 6px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;
+                ${status === 'absent' 
+                  ? 'background:' + statusColors.leave + ';color:white;box-shadow:0 3px 8px ' + hexToRgba(statusColors.leave, 0.35) + ';' 
+                  : 'background:transparent;color:var(--text-secondary);'}"
+                onmouseenter="if('${status}'!=='absent')this.style.background='${hexToRgba(statusColors.leave, 0.1)}'"
+                onmouseleave="if('${status}'!=='absent')this.style.background='transparent'">
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function getAttendanceSummaryBadges(dateStr){
+  const recs = ATTENDANCE.filter(a => a.date === dateStr);
+  const present = recs.filter(r => r.status === 'present').length;
+  const halfDay = recs.filter(r => r.status === 'late').length;
+  const leave = recs.filter(r => r.status === 'absent').length;
+  const unmarked = EMPLOYEE_STORE.length - recs.length;
+
+  return `
+    <span style="display:flex;align-items:center;gap:6px;background:var(--badge-present-bg);color:${statusColors.present};font-weight:700;font-size:11px;padding:5px 12px;border-radius:40px;border:1px solid ${hexToRgba(statusColors.present,0.15)};">
+      <i class="fas fa-check"></i> ${present} Present
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;background:var(--badge-late-bg);color:${statusColors.half};font-weight:700;font-size:11px;padding:5px 12px;border-radius:40px;border:1px solid ${hexToRgba(statusColors.half,0.15)};">
+      <i class="fas fa-adjust"></i> ${halfDay} Half Day
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;background:var(--badge-absent-bg);color:${statusColors.leave};font-weight:700;font-size:11px;padding:5px 12px;border-radius:40px;border:1px solid ${hexToRgba(statusColors.leave,0.15)};">
+      <i class="fas fa-times"></i> ${leave} Leave
+    </span>
+    ${unmarked > 0 ? `
+    <span style="display:flex;align-items:center;gap:6px;background:var(--note-item-bg);color:var(--text-secondary);font-weight:700;font-size:11px;padding:5px 12px;border-radius:40px;border:1px solid var(--border);">
+      <i class="fas fa-question"></i> ${unmarked} Unmarked
+    </span>` : ''}
+  `;
+}
+
+function changeAttendanceDate(val){
+  selectedAttendanceDate = val;
+  setActivePage('attendance');
+}
+
+function setEmployeeAttendance(empId, status){
+  const dateStr = selectedAttendanceDate;
+  let rec = ATTENDANCE.find(a => a.date === dateStr && a.employeeId === empId);
+  
+  if(rec){
+    rec.status = status;
+    rec.clockIn = status !== 'absent' ? (status === 'late' ? '10:15' : '09:15') : null;
+    rec.clockOut = status !== 'absent' ? '18:00' : null;
+  } else {
+    ATTENDANCE.push({
+      id: `${empId}-${dateStr}`,
+      employeeId: empId,
+      date: dateStr,
+      status: status,
+      clockIn: status !== 'absent' ? (status === 'late' ? '10:15' : '09:15') : null,
+      clockOut: status !== 'absent' ? '18:00' : null
+    });
+  }
+
+  // Visual success feedback
+  const feedbackEl = document.getElementById(`status-saved-${empId}`);
+  if(feedbackEl){
+    feedbackEl.style.opacity = '1';
+    setTimeout(() => { feedbackEl.style.opacity = '0'; }, 1000);
+  }
+
+  // Update summary badges live
+  const summaryEl = document.getElementById('attendance-summary-badges');
+  if(summaryEl){
+    summaryEl.innerHTML = getAttendanceSummaryBadges(dateStr);
+  }
+
+  // Update button styles inline for instant feedback
+  const btnContainer = feedbackEl.parentElement.nextElementSibling.nextElementSibling.lastElementChild;
+  const buttons = btnContainer.querySelectorAll('button');
+  const colors = {
+    present: {bg: statusColors.present, shadow: hexToRgba(statusColors.present, 0.35)},
+    late: {bg: statusColors.half, shadow: hexToRgba(statusColors.half, 0.35)},
+    absent: {bg: statusColors.leave, shadow: hexToRgba(statusColors.leave, 0.35)}
+  };
+
+  buttons.forEach(btn => {
+    const btnText = btn.textContent.trim().toLowerCase();
+    let btnStatus = 'present';
+    if(btnText === 'half day') btnStatus = 'late';
+    if(btnText === 'leave') btnStatus = 'absent';
+
+    if(btnStatus === status){
+      btn.style.background = colors[status].bg;
+      btn.style.color = 'white';
+      btn.style.boxShadow = `0 3px 8px ${colors[status].shadow}`;
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-secondary)';
+      btn.style.boxShadow = 'none';
+    }
+  });
+}
+
+/* ══════════════════════════════════════
+   PAYMENTS
+══════════════════════════════════════ */
+function renderPayments(){
+  const monthLabel = currentMonthLabel;
+  const totalPayroll = EMPLOYEE_STORE.reduce((sum, emp) => {
+    const recs = ATTENDANCE.filter(a => a.date.startsWith(currentMonthPrefix) && a.employeeId === emp.id);
+    const presentDays = recs.filter(r => r.status === 'present').length;
+    const halfDays    = recs.filter(r => r.status === 'late').length;
+    return sum + (presentDays * emp.salary) + (halfDays * emp.salary * 0.5);
+  }, 0);
+
+  const cards = EMPLOYEE_STORE.map(emp => {
+    const recs       = ATTENDANCE.filter(a => a.date.startsWith(currentMonthPrefix) && a.employeeId === emp.id);
+    const presentDays= recs.filter(r => r.status === 'present').length;
+    const halfDays   = recs.filter(r => r.status === 'late').length;
+    const leaveDays  = recs.filter(r => r.status === 'absent').length;
+    const earned     = (presentDays * emp.salary) + (halfDays * emp.salary * 0.5);
+    const maxPossible= TODAY_DAY * emp.salary;
+    const pct        = maxPossible > 0 ? Math.round((earned / maxPossible) * 100) : 0;
+    const c          = deptColor(emp.dept);
+    const init       = emp.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
+    return `
+    <div class="glass-card" style="padding:26px 24px;display:flex;flex-direction:column;gap:18px;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:${c}20;border:2.5px solid ${c}55;
+          display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:${c};flex-shrink:0;">
+          ${init}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${emp.name}</div>
+          <span style="display:inline-block;background:${c}18;color:${c};font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;margin-top:3px;">${emp.dept}</span>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;">Daily Rate</div>
+          <div style="font-size:16px;font-weight:800;color:${c};">₹${emp.salary.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div style="height:1px;background:var(--border);"></div>
+
+      <!-- Attendance breakdown -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:var(--badge-present-bg);border-radius:14px;padding:10px 8px;text-align:center;border:1px solid rgba(16,185,129,0.18);">
+          <div style="font-size:22px;font-weight:800;color:#10b981;">${presentDays}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--text-secondary);margin-top:2px;">Present</div>
+        </div>
+        <div style="background:var(--badge-late-bg);border-radius:14px;padding:10px 8px;text-align:center;border:1px solid rgba(245,158,11,0.18);">
+          <div style="font-size:22px;font-weight:800;color:#F59E0B;">${halfDays}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--text-secondary);margin-top:2px;">Half Day</div>
+        </div>
+        <div style="background:var(--badge-absent-bg);border-radius:14px;padding:10px 8px;text-align:center;border:1px solid rgba(239,68,68,0.18);">
+          <div style="font-size:22px;font-weight:800;color:#EF4444;">${leaveDays}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--text-secondary);margin-top:2px;">Leave</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+          <span style="font-size:11px;font-weight:600;color:var(--text-secondary);">Salary Earned</span>
+          <span style="font-size:11px;font-weight:700;color:${c};">${pct}% of max</span>
+        </div>
+        <div style="height:8px;background:var(--note-item-bg);border-radius:40px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${c},${c}99);border-radius:40px;transition:width .6s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div style="background:linear-gradient(135deg,${c}12,${c}06);border:1px solid ${c}30;border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;">Total Earned — ${monthLabel}</div>
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px;">₹${earned.toLocaleString()}</div>
+        </div>
+        <div style="width:46px;height:46px;border-radius:50%;background:${c}20;display:flex;align-items:center;justify-content:center;font-size:20px;color:${c};">
+          <i class="fas fa-coins"></i>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="fade-up">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;">Payroll</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text-primary);margin-top:2px;">${monthLabel} Payments</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#3B82F6,#06B6D4);border-radius:20px;padding:16px 24px;display:flex;align-items:center;gap:16px;">
+        <i class="fas fa-wallet" style="font-size:22px;color:white;"></i>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.8px;">Total Payroll</div>
+          <div style="font-size:26px;font-weight:800;color:white;">₹${totalPayroll.toLocaleString()}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info notice -->
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,.07),rgba(6,182,212,.07));border:1px solid rgba(59,130,246,.18);border-radius:18px;padding:14px 20px;margin-bottom:28px;display:flex;align-items:center;gap:14px;">
+      <i class="fas fa-info-circle" style="color:#3B82F6;font-size:20px;"></i>
+      <div style="font-size:13px;color:var(--text-secondary);">
+        Payment is calculated as: <strong style="color:var(--text-primary);">Present Days × Daily Rate</strong> + <strong style="color:var(--text-primary);">Half Days × Daily Rate × 0.5</strong>. Mark attendance in the Attendance tab to update these figures.
+      </div>
+    </div>
+
+    <!-- Employee Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;">
+      ${cards || `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted);"><i class="fas fa-coins" style="font-size:40px;margin-bottom:14px;display:block;"></i>No employees found.</div>`}
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════
+   EXPORT DATA
+══════════════════════════════════════ */
+window.downloadCSV = function(headers, rows, fileName) {
+  const escapeField = (field) => {
+    if (field === null || field === undefined) return '';
+    let str = String(field);
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      str = '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  };
+
+  const csvContent = [
+    headers.map(escapeField).join(','),
+    ...rows.map(row => row.map(escapeField).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", fileName);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+window.exportEmployeesCSV = function() {
+  const headers = ["Employee ID", "Name", "Department", "Age", "Phone", "Joining Date", "Daily Salary (INR)"];
+  const rows = EMPLOYEE_STORE.map(e => [
+    e.id,
+    e.name,
+    e.dept,
+    e.age,
+    e.phone,
+    e.doj,
+    e.salary
+  ]);
+  downloadCSV(headers, rows, `employees_directory_${new Date().toISOString().slice(0,10)}.csv`);
+};
+
+window.exportPayrollCSV = function() {
+  const headers = ["Employee ID", "Name", "Department", "Present Days", "Half Days", "Leave Days", "Total Earned (INR)"];
+  const rows = EMPLOYEE_STORE.map(emp => {
+    const recs = ATTENDANCE.filter(a => a.date.startsWith(currentMonthPrefix) && a.employeeId === emp.id);
+    const presentDays = recs.filter(r => r.status === 'present').length;
+    const halfDays = recs.filter(r => r.status === 'late').length;
+    const leaveDays = recs.filter(r => r.status === 'absent').length;
+    const earned = (presentDays * emp.salary) + (halfDays * emp.salary * 0.5);
+    return [
+      emp.id,
+      emp.name,
+      emp.dept,
+      presentDays,
+      halfDays,
+      leaveDays,
+      earned
+    ];
+  });
+  downloadCSV(headers, rows, `payroll_summary_${currentMonthPrefix.replace('-','')}_${new Date().toISOString().slice(0,10)}.csv`);
+};
+
+window.exportLogsCSV = function() {
+  const headers = ["Date", "Employee ID", "Name", "Department", "Status", "Clock In", "Clock Out"];
+  const rows = [];
+  ATTENDANCE.forEach(a => {
+    const emp = EMPLOYEE_STORE.find(e => e.id === a.employeeId);
+    if (emp) {
+      const statusLabel = a.status === 'present' ? 'Present' : a.status === 'late' ? 'Half Day' : 'Leave';
+      rows.push([
+        a.date,
+        emp.id,
+        emp.name,
+        emp.dept,
+        statusLabel,
+        a.clockIn || '—',
+        a.clockOut || '—'
+      ]);
+    }
+  });
+  downloadCSV(headers, rows, `attendance_detailed_logs_${new Date().toISOString().slice(0,10)}.csv`);
+};
+
+function renderExportData() {
+  const empCount = EMPLOYEE_STORE.length;
+  const totalPayroll = EMPLOYEE_STORE.reduce((sum, emp) => {
+    const recs = ATTENDANCE.filter(a => a.date.startsWith(currentMonthPrefix) && a.employeeId === emp.id);
+    const presentDays = recs.filter(r => r.status === 'present').length;
+    const halfDays    = recs.filter(r => r.status === 'late').length;
+    return sum + (presentDays * emp.salary) + (halfDays * emp.salary * 0.5);
+  }, 0);
+  const totalLogs = ATTENDANCE.length;
+
+  return `
+  <div class="fade-up">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;">Data Center</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text-primary);margin-top:2px;">Export Reports</div>
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(6,182,212,0.06));border:1px solid rgba(59,130,246,0.15);border-radius:20px;padding:18px 24px;margin-bottom:28px;display:flex;align-items:center;gap:16px;">
+      <div style="width:42px;height:42px;border-radius:50%;background:#3B82F61a;display:flex;align-items:center;justify-content:center;font-size:18px;color:#3B82F6;flex-shrink:0;">
+        <i class="fas fa-file-export"></i>
+      </div>
+      <div>
+        <h4 style="font-size:15px;font-weight:700;color:var(--text-primary);">Export attendance & payroll databases to CSV</h4>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Generate spreadsheets containing your configured rosters, employee files, or month-to-date payouts. These files can be opened in Microsoft Excel or Google Sheets.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:24px;margin-bottom:28px;">
+      <div class="glass-card" style="padding:24px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div style="width:48px;height:48px;border-radius:14px;background:rgba(59,130,246,0.12);color:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:20px;">
+              <i class="fas fa-users"></i>
+            </div>
+            <span style="background:var(--badge-present-bg);color:#10b981;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">${empCount} Records</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Employee Directory</h3>
+          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Contains complete profile details, departments, phone numbers, hiring dates, and daily fixed salary rates.</p>
+        </div>
+        <button onclick="exportEmployeesCSV()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#3B82F6,#06B6D4);border:none;border-radius:14px;padding:12px;color:white;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.25);transition:opacity .2s;" onmouseenter="this.style.opacity='.9'" onmouseleave="this.style.opacity='1'">
+          <i class="fas fa-download"></i> Download CSV
+        </button>
+      </div>
+
+      <div class="glass-card" style="padding:24px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div style="width:48px;height:48px;border-radius:14px;background:rgba(16,185,129,0.12);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:20px;">
+              <i class="fas fa-coins"></i>
+            </div>
+            <span style="background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(6,182,212,0.1));color:#3B82F6;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">₹${totalPayroll.toLocaleString()} Total</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Monthly Payroll Summary</h3>
+          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Calculates total days present, half days, leave days, and computed monthly earnings based on current attendance entries.</p>
+        </div>
+        <button onclick="exportPayrollCSV()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:14px;padding:12px;color:white;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.25);transition:opacity .2s;" onmouseenter="this.style.opacity='.9'" onmouseleave="this.style.opacity='1'">
+          <i class="fas fa-download"></i> Download CSV
+        </button>
+      </div>
+
+      <div class="glass-card" style="padding:24px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div style="width:48px;height:48px;border-radius:14px;background:rgba(245,158,11,0.12);color:#F59E0B;display:flex;align-items:center;justify-content:center;font-size:20px;">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <span style="background:var(--badge-late-bg);color:#F59E0B;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">${totalLogs} Logs</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Daily Attendance Logs</h3>
+          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Detailed date-by-date roster logs. Includes check-in and check-out timestamps, employee details, and exact status markers.</p>
+        </div>
+        <button onclick="exportLogsCSV()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#F59E0B,#D97706);border:none;border-radius:14px;padding:12px;color:white;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(245,158,11,.25);transition:opacity .2s;" onmouseenter="this.style.opacity='.9'" onmouseleave="this.style.opacity='1'">
+          <i class="fas fa-download"></i> Download CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding:26px 24px;">
+      <h3 style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:14px;">Data Preview (Directory)</h3>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;text-align:left;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border2);color:var(--text-secondary);font-weight:700;">
+              <th style="padding:10px 12px;">ID</th>
+              <th style="padding:10px 12px;">Name</th>
+              <th style="padding:10px 12px;">Department</th>
+              <th style="padding:10px 12px;">Phone</th>
+              <th style="padding:10px 12px;">Joining Date</th>
+              <th style="padding:10px 12px;text-align:right;">Salary / Day</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${EMPLOYEE_STORE.slice(0, 5).map(emp => `
+              <tr style="border-bottom:1px solid var(--border);color:var(--text-primary);">
+                <td style="padding:10px 12px;font-weight:600;">${emp.id}</td>
+                <td style="padding:10px 12px;">${emp.name}</td>
+                <td style="padding:10px 12px;"><span style="background:${deptColor(emp.dept)}12;color:${deptColor(emp.dept)};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${emp.dept}</span></td>
+                <td style="padding:10px 12px;">${emp.phone}</td>
+                <td style="padding:10px 12px;">${emp.doj}</td>
+                <td style="padding:10px 12px;text-align:right;font-weight:700;color:${deptColor(emp.dept)}">₹${emp.salary.toLocaleString()}</td>
+              </tr>
+            `).join('')}
+            ${empCount > 5 ? `
+              <tr>
+                <td colspan="6" style="padding:12px;text-align:center;color:var(--text-muted);font-style:italic;">Showing top 5 employees. Download CSV to view all ${empCount} records.</td>
+              </tr>
+            ` : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════ */
+function renderDashboard(){
+  const{present,absent}=getTodayStats();
+  const rate=getMonthlyRate();
+  return`
+  <div class="stat-card-container" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:30px;">
+    ${StatCard({label:"TODAY PRESENT",value:present,sub:"on time & late included",accent:"#10b981",icon:"fa-user-check"})}
+    ${StatCard({label:"ABSENT TODAY",value:absent,sub:"unaccounted",accent:"#ef4444",icon:"fa-user-slash"})}
+    ${StatCard({label:"MONTHLY RATE",value:`${rate}%`,sub:`${currentMonthLabel} overall`,accent:"#3B82F6",icon:"fa-chart-line"})}
+  </div>
+  <div class="split-grid" style="display:grid;grid-template-columns:1fr 1.55fr;gap:26px;">
+    <!-- ORB -->
+    <div class="glass-card" style="padding:20px;overflow:hidden;">
+      <div style="margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;">LIVE ATTENDANCE ORB</div>
+        <div style="font-size:19px;font-weight:700;color:var(--text-primary);">${rate}% monthly sync</div>
+      </div>
+      <div id="orb-container" style="width:100%;height:260px;"></div>
+      <div style="text-align:center;margin-top:6px;font-size:12px;color:#3B82F6;">
+        <i class="fas fa-circle" style="font-size:8px;animation:pulse 2s infinite;margin-right:5px;"></i>Real-time presence metric
+      </div>
+    </div>
+    <!-- Calendar -->
+    <div class="glass-card" style="padding:22px;">
+      ${renderCalendar()}
+    </div>
+  </div>
+  <!-- 3D Chart -->
+  ${renderAttendanceChart()}`;
+}
+
+/* ══════════════════════════════════════
+   MAIN RENDER
+══════════════════════════════════════ */
+const NAV_ITEMS=[
+  {id:"dashboard",label:"Dashboard",icon:"fa-chart-pie"},
+  {id:"attendance",label:"Attendance",icon:"fa-calendar-check"},
+  {id:"employees",label:"Employee",icon:"fa-users"},
+  {id:"payments",label:"Payments",icon:"fa-coins"},
+  {id:"export",label:"Export Data",icon:"fa-file-export"}
+];
+
+function getPageContent(){
+  if(activePage==='dashboard') return renderDashboard();
+  if(activePage==='employees') return renderEmployees();
+  if(activePage==='attendance') return renderAttendancePage();
+  if(activePage==='payments') return renderPayments();
+  if(activePage==='export') return renderExportData();
+  return`<div class="glass-card" style="padding:60px 40px;text-align:center;">
+    <i class="fas fa-construction" style="font-size:56px;color:#3B82F6;margin-bottom:20px;"></i>
+    <h3 style="font-size:24px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">${activePage.charAt(0).toUpperCase()+activePage.slice(1)} Module</h3>
+    <p style="color:var(--text-secondary);">Detailed view available in full implementation.</p>
+  </div>`;
+}
+
+function renderApp(){
+  const html=`
+  <div style="min-height:100vh;background:var(--bg);transition:background .35s;">
+    <!-- Navbar -->
+    <nav style="position:fixed;top:0;left:0;right:0;height:70px;background:var(--nav-bg);backdrop-filter:blur(22px);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;gap:12px;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <button onclick="toggleSidebar()" style="background:var(--note-item-bg);border:1px solid var(--border2);border-radius:12px;padding:8px 12px;cursor:pointer;color:var(--text-primary);transition:background .2s;">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div style="font-size:26px;font-weight:800;background:linear-gradient(135deg,#3B82F6,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Attendify</div>
+        <div style="background:#EFF6FF;padding:4px 12px;border-radius:40px;font-size:11px;font-weight:700;color:#3B82F6;">ADMIN</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button id="notes-toggle-btn" class="nav-icon-btn" onclick="toggleNotes()" title="Notes"
+          style="${notesOpen?'background:#EFF6FF;border-color:#3B82F6;':''}">
+          <i class="fas fa-sticky-note" style="color:#F59E0B;font-size:16px;"></i>
+        </button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-moon" style="font-size:13px;color:var(--text-muted);"></i>
+          <button id="dark-toggle-btn" class="dark-toggle${darkMode?' on':''}" onclick="toggleDarkMode()" title="Dark mode"></button>
+        </div>
+        <div class="brand-icon" title="Attendify Admin"><span>A</span></div>
+      </div>
+    </nav>
+
+    <div style="display:flex;padding-top:70px;">
+      <!-- Sidebar backdrop overlay for mobile -->
+      <div id="sidebar-overlay" class="${sidebarOpen ? 'active' : ''}" onclick="toggleSidebar()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:85;display:none;backdrop-filter:blur(2px);"></div>
+      <!-- Sidebar -->
+      <aside id="sidebar" class="${sidebarOpen ? 'open-mobile' : ''}" style="width:${sidebarOpen?'256px':'0'};overflow:hidden;transition:width .3s, transform .3s;background:var(--sidebar-bg);backdrop-filter:blur(18px);border-right:1px solid var(--border2);position:fixed;left:0;bottom:0;top:70px;z-index:90;">
+        <div style="padding:20px 14px;">
+          ${NAV_ITEMS.map(item=>`
+          <div onclick="setActivePage('${item.id}')"
+            style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:18px;margin-bottom:6px;background:${activePage===item.id?'#EFF6FF':'transparent'};color:${activePage===item.id?'#3B82F6':'var(--text-primary)'};cursor:pointer;transition:.2s;font-weight:${activePage===item.id?700:500};"
+            onmouseenter="if('${activePage}'!=='${item.id}')this.style.background='${darkMode?'rgba(51,65,85,.4)':'#F1F5F9'}'"
+            onmouseleave="if('${activePage}'!=='${item.id}')this.style.background='transparent'">
+            <i class="fas ${item.icon}" style="width:22px;"></i>
+            <span style="white-space:nowrap;">${item.label}</span>
+            ${activePage===item.id?`<span style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:#3B82F6;"></span>`:''}
+          </div>`).join('')}
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main style="flex:1;margin-left:${sidebarOpen?'256px':'0'};margin-right:${notesOpen?'340px':'0'};transition:margin .3s;padding:30px 36px;min-height:calc(100vh - 70px);">
+        <div style="margin-bottom:26px;">
+          <div style="font-size:13px;color:#3B82F6;font-weight:600;"><i class="fas fa-home" style="font-size:10px;"></i> Attendify / ${activePage==="export"?"Export Data":activePage.charAt(0).toUpperCase()+activePage.slice(1)}</div>
+          <h1 style="font-size:26px;font-weight:800;margin-top:4px;color:var(--text-primary);">${activePage==="dashboard"?"HR Dashboard":activePage==="export"?"Export Data":activePage==="employees"?"Employee Directory":activePage.charAt(0).toUpperCase()+activePage.slice(1)}</h1>
+        </div>
+        ${getPageContent()}
+      </main>
+    </div>
+
+    <!-- Notes panel -->
+    ${renderNotesPanel()}
+
+    <!-- Side Panel (day detail) -->
+    <div id="side-panel" style="position:fixed;top:0;right:0;bottom:0;z-index:2000;display:none;justify-content:flex-end;align-items:center;background:rgba(0,0,0,.32);backdrop-filter:blur(3px);" onclick="if(event.target===this)closeSidePanel()"></div>
+  </div>`;
+
+  document.getElementById('app').innerHTML=html;
+
+  if(activePage==='dashboard'){
+    setTimeout(()=>{if(document.getElementById('orb-container'))initOrb();},100);
+    setTimeout(draw3DChart,160);
+  }
+}
+
+/* ══════════════════════════════════════
+   GLOBAL FUNCTIONS
+══════════════════════════════════════ */
+window.toggleSidebar=function(){sidebarOpen=!sidebarOpen;renderApp();};
+window.setActivePage=function(p){
+  activePage=p;
+  if(window.innerWidth <= 1024) {
+    sidebarOpen = false;
+  }
+  renderApp();
+};
+window.showDayDetails=showDayDetails;
+window.closeSidePanel=closeSidePanel;
+window.toggleNotes=toggleNotes;
+window.toggleDarkMode=toggleDarkMode;
+window.openEmployeeModal=openEmployeeModal;
+window.changeAttendanceDate=changeAttendanceDate;
+window.setEmployeeAttendance=setEmployeeAttendance;
+window.exportEmployeesCSV=exportEmployeesCSV;
+window.exportPayrollCSV=exportPayrollCSV;
+window.exportLogsCSV=exportLogsCSV;
+
+window.addEventListener('resize',()=>{if(activePage==='dashboard')draw3DChart();});
+
+/* ── Boot: load Three.js then render ── */
+const s=document.createElement('script');
+s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+s.onload=()=>renderApp();
+s.onerror=()=>{
+  console.warn("Three.js CDN failed to load. Rendering dashboard with Canvas 2D fallback.");
+  renderApp();
+};
+document.head.appendChild(s);
+</script>
+</body>
+</html>
